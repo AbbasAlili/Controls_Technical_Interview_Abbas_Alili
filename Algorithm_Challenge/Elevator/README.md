@@ -6,6 +6,26 @@ The algorithm prioritizes minimizing travel distance by first serving the closes
 
 ## **How to Run**
 
+### **Clone the Repository**
+First, clone the repository to your local machine:
+```bash
+git clone https://github.com/AbbasAlili/Controls_Technical_Interview_Abbas_Alili.git
+```
+
+### *Navigate to the Algorithm_Challenge/Elevator directory:**
+```bash
+cd Controls_Technical_Interview_Abbas_Alili/Algorithm_Challenge/Elevator
+```
+
+
 ### **Build the Project**
 ```bash
-gcc elevator_problem.c -o elevator_problem
+gcc -o elevator_problem.exe elevator_problem.c
+```
+
+
+### **Run the Executable**
+```bash
+./elevator_problem.exe
+
+
