@@ -44,11 +44,50 @@ static void delay(int16_t ms);
 //To stop at a floor means to open the doors and let passengers on and off. It 
 //is possible to pass through a floor without stopping there.
 //Note: The output should be a number between 0 and (BUILDING_HEIGHT-1), inclusive
-static int8_t setNextElevatorStop(struct building_s building)
-{
-	return 0;
-}
 
+
+/*
+ * The algorithm prioritizes minimizing travel distance by first serving the closest destination
+ * of any current passengers in the elevator. If the elevator is empty, it moves to the closest
+ * floor that has waiting passengers. This greedy approach of always choosing the nearest target
+ * ensures continuous movement while keeping travel distances minimal.
+ */
+
+static int8_t setNextElevatorStop(struct building_s building) {
+    int8_t currentFloor = building.elevator.currentFloor;
+    int8_t nextStop = -1;
+    int8_t minDistance = BUILDING_HEIGHT + 1;
+
+    // Check destinations of current passengers
+    for (int8_t i = 0; i < ELEVATOR_MAX_CAPACITY; i++) {
+        if (building.elevator.passengers[i] != -1) {
+            int8_t destination = building.elevator.passengers[i];
+            int8_t distance = abs(destination - currentFloor);
+            if (distance < minDistance) {
+                minDistance = distance;
+                nextStop = destination;
+            }
+        }
+    }
+
+    // If no passengers, check for floors with waiting passengers
+    if (nextStop == -1) {
+        for (int8_t f = 0; f < BUILDING_HEIGHT; f++) {
+            for (int8_t j = 0; j < 2; j++) {
+                if (building.floors[f].departures[j] != -1) {
+                    int8_t distance = abs(f - currentFloor);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        nextStop = f;
+                    }
+                }
+            }
+        }
+    }
+
+    // If still no target, default to staying at the current floor
+    return nextStop != -1 ? nextStop : currentFloor;
+}
 
 //****************************************************************************
 //YOU CAN REVIEW THE CODE BELOW BUT DO NOT EDIT IT UNLESS YOU'RE 3000% SURE 
@@ -164,6 +203,49 @@ static void initBuilding(void)
 		}
 		myBuilding.floors[f].arrivals = 0;
 	}
+
+
+// // worst case simulation:
+
+// memset(&myBuilding, -1, sizeof(struct building_s));
+
+//     // Start elevator at bottom floor
+//     myBuilding.elevator.currentFloor = 0;
+//     myBuilding.elevator.nextStop = myBuilding.elevator.currentFloor;
+
+//     // Place passengers in a way that forces maximum travel:
+//     // - Put people at bottom floor (0) wanting to go to top floor (4)
+//     // - Put people at top floor (4) wanting to go to bottom floor (0)
+//     // This forces the elevator to make multiple trips
+    
+//     // Floor 0: Two people going to top floor
+//     myBuilding.floors[0].departures[0] = 4;
+//     myBuilding.floors[0].departures[1] = 4;
+    
+//     // Floor 1: Two people going to top floor
+//     myBuilding.floors[1].departures[0] = 4;
+//     myBuilding.floors[1].departures[1] = 4;
+    
+//     // Floor 2: Two people, one going up, one going down
+//     myBuilding.floors[2].departures[0] = 4;
+//     myBuilding.floors[2].departures[1] = 0;
+    
+//     // Floor 3: Two people going to bottom floor
+//     myBuilding.floors[3].departures[0] = 0;
+//     myBuilding.floors[3].departures[1] = 0;
+    
+//     // Floor 4: Two people going to bottom floor
+//     myBuilding.floors[4].departures[0] = 0;
+//     myBuilding.floors[4].departures[1] = 0;
+    
+//     // Initialize arrivals to 0
+//     for(int8_t f = 0; f < BUILDING_HEIGHT; f++)
+//     {
+//         myBuilding.floors[f].arrivals = 0;
+//     }
+
+
+
 }
 
 static void moveElevator(struct elevator_s * elevator)
