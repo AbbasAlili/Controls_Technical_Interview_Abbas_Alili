@@ -99,7 +99,12 @@ void main(void)
 
 static void initIntersection(void)
 {
-	myIntersection.horizantalTrafficColor = "R";
+	
+	//The initIntersection function initializes all traffic lights to "R". This prevents the simulation from starting with a functioning light cycle. Fix: Start one light on GREEN to ensure traffic flow:
+	// myIntersection.horizantalTrafficColor = "R";
+
+	//fixedd the issue:
+	myIntersection.horizantalTrafficColor = "G";
 	myIntersection.verticalTrafficColor = "R";
 
 	myIntersection.eastboundCars.popularity = 3;
@@ -130,6 +135,10 @@ static char * setHorizantalTrafficLight(struct intersection_s intersection)
 	}
 
 	t++;
+
+// Issue 1: Logic error in setHorizantalTrafficLight function - missing break statements causing fallthrough
+
+	/* Original problematic code:
 	switch(currentColorEnum)
 	{
 		case RED:
@@ -158,6 +167,42 @@ static char * setHorizantalTrafficLight(struct intersection_s intersection)
 			t = 0;	
 	}
 
+	 */
+
+
+	// Fixed version - Added break statements to prevent fallthrough
+    switch(currentColorEnum)
+    {
+        case RED:
+            if((intersection.eastboundCars.carsWaitingAtIntersection + intersection.westboundCars.carsWaitingAtIntersection >= intersection.northboundCars.carsWaitingAtIntersection + intersection.southboundCars.carsWaitingAtIntersection) && (strcmp(intersection.verticalTrafficColor,"R") == 0))
+            {
+                newColor = "G";
+                t = 0;
+            }
+            break;
+
+        case GREEN:
+            if((intersection.eastboundCars.carsWaitingAtIntersection + intersection.westboundCars.carsWaitingAtIntersection < intersection.northboundCars.carsWaitingAtIntersection + intersection.southboundCars.carsWaitingAtIntersection) || t > 10)
+            {
+                newColor = "Y";
+                t = 0;
+            }
+            break;
+
+        case YELLOW:
+            if(t > 1)
+            {
+                newColor = "R";
+                t = 0;
+            }
+            break;
+
+        default:
+            newColor = "R";
+            t = 0;
+            break;  
+    }
+
 	return newColor;
 }
 
@@ -168,6 +213,9 @@ static char * setVerticalTrafficLight(struct intersection_s intersection)
 	char * newColor = currentColor;
 	traffic_light_colors_t currentColorEnum = -1;
 
+
+// Issue 2: Logic error in currentColorEnum initialization - Green and Yellow conditions were nested incorrectly
+/* Original problematic code:
 	if(strcmp(currentColor,"R") == 0)
 	{
 		currentColorEnum = RED;
@@ -181,6 +229,17 @@ static char * setVerticalTrafficLight(struct intersection_s intersection)
 	{
 		currentColorEnum = YELLOW;
 	}
+
+	 */
+
+    // Fixed version - Corrected the logic flow for color state detection
+	if(strcmp(currentColor, "R") == 0)
+		currentColorEnum = RED;
+	else if(strcmp(currentColor, "G") == 0)
+		currentColorEnum = GREEN;
+	else if(strcmp(currentColor, "Y") == 0)
+		currentColorEnum = YELLOW;
+
 
 	t++;
 	switch(currentColorEnum)
@@ -425,8 +484,14 @@ static void delay(int16_t ms)
 static int8_t checkForCrashes(void)
 {
 	int8_t isHorizantalCarInIntersection = (myIntersection.westboundCars.carsInIntersection | myIntersection.eastboundCars.carsInIntersection);
-	int8_t isVerticalCarInIntersection = (myIntersection.westboundCars.carsInIntersection | myIntersection.eastboundCars.carsInIntersection);
-
+	
+	//Issue 3:This line incorrectly checks the same lanes twice:
+	// int8_t isVerticalCarInIntersection = (myIntersection.westboundCars.carsInIntersection | myIntersection.eastboundCars.carsInIntersection);
+	
+	//Fixed version: It should check the northboundCars and southboundCars with the following line
+	int8_t isVerticalCarInIntersection = (myIntersection.northboundCars.carsInIntersection | myIntersection.southboundCars.carsInIntersection);
+	
+	
 	if(isHorizantalCarInIntersection && isVerticalCarInIntersection){return 1;}
 	return 0;
 }
